@@ -62,10 +62,10 @@ int main (int argc, char const *argv[])
 	// Mesh mesh = OBJLoader<VertexType>().loadMesh("Obj/TankNoTex/", "T-90.obj");
 	// Mesh mesh = OBJLoader<VertexType>().loadMesh("Obj/Tree/", "Lowpoly_tree_sample.obj");
 	// Mesh mesh = OBJLoader<VertexType>().loadMesh("Obj/Box/", "box_obj.obj");
-	Mesh mesh = OBJLoader<VertexType>().loadMesh("Obj/Town/OBJ/", "City.obj");
+	// Mesh mesh = OBJLoader<VertexType>().loadMesh("Obj/Town/OBJ/", "City.obj");
 	
-	DeprecatedVBOMeshDraw gMesh(mesh);
-	DynamicVBOMeshDraw gdMesh(mesh);
+	// DeprecatedVBOMeshDraw gMesh(mesh);
+	// DynamicVBOMeshDraw gdMesh(mesh);
 
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_CULL_FACE);
@@ -181,11 +181,6 @@ int main (int argc, char const *argv[])
 		// }
 		glDisable(GL_BLEND);
 		glLineWidth(1);
-
-		glDisable(GL_CULL_FACE);
-		shader.setMatrix("worldMatrix", scale4<float>(0.01, 0.01, 0.01));
-		FixedFunctionMeshDraw().draw(mesh, shader);
-		// gMesh.draw(shader);
 		newGame.render(drawContext);
 		glLineWidth(4);
 		glEnable(GL_BLEND);
