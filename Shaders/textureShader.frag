@@ -21,7 +21,7 @@ void main()
 
 	/// lighting
 	diffuze *= max(dot(normal, lightDir), 0.0f);
-	vec4 fragColor = texture2D(texture, texCoord) * (diffuze + ambient) + color;	
+	vec4 fragColor = texture2D(texture, texCoord) * (diffuze + ambient);
 
 	/// tone map?
 	fragColor = fragColor / (1 + fragColor);
