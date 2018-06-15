@@ -1,12 +1,9 @@
 #ifndef MAP_TILE_H
 #define MAP_TILE_H
 
-#include "Unit.h"
-
 class MapTile {
 public:
 	bool empty = true;
-	std::shared_ptr<Unit> unitPtr;
 
 	bool aquire() {
 		empty = false;

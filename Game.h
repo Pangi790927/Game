@@ -19,6 +19,7 @@ public:
 	ShaderProgram unitShader;
 	GameCamera camera;
 	Math::Point3f selection;
+	bool wallAdd = false;
 
 	Game (int mapWidth, int mapHeight) : map(mapWidth, mapHeight) {
 		spawnUnit(1, 1, 3, 3);
@@ -33,10 +34,20 @@ public:
 	void spawnUnit (int player, int type, int i, int j) {
 		if (map.canAquire(i, j)) {
 			map.aquire(i, j);
-			map(i, j).unitPtr = std::shared_ptr<Unit>(new TankUnit(player, type));
-			map(i, j).unitPtr->pos = Math::Point3f(i, 0, j) * map.scale;
-			units.push_back(map(i, j).unitPtr);
-			std::cout << "spawnUnit" << std::endl;
+			units.push_back(std::shared_ptr<Unit>(new TankUnit(player, type)));
+			units.back()->pos = Math::Point3f(i, 0, j) * map.scale;
+			units.back()->dest.setFinish(Math::Point2i(i, j));
+		}
+	}
+
+	void update() {
+		static int timeout = 0;
+		timeout++;
+		if (timeout > 2) {
+			timeout = 0;
+			for (auto&& unit : units) {
+				unit->move(map);
+			}
 		}
 	}
 
@@ -48,6 +59,10 @@ public:
 		
 		static Math::Point2f lastPos;
 		static bool wasRmb = false;
+		if (window.keyboard.getKeyState('t'))
+			wallAdd = true;
+		else
+			wallAdd = false;
 		if (window.mouse.getRmb() && !wasRmb) {
 			lastPos = Util::getMousePos(window.mouse,
 					window.width, window.height);
@@ -101,10 +116,18 @@ public:
 		);
 		if (intersect.first) {
 			selection = intersect.second;
-			spawnUnit(1, 1,
-				map.getTilePos(Point2f(selection.x, selection.z)).x,
-				map.getTilePos(Point2f(selection.x, selection.z)).y
-			);
+			auto tilePos = map.getTilePos(Point2f(selection.x, selection.z));
+			if (wallAdd) {
+				spawnUnit(1, 1,
+					tilePos.x,
+					tilePos.y
+				);
+			}
+			else {
+				for (auto&& unit : selectedUnits) {
+					unit->dest.setFinish(tilePos);
+				}
+			}
 		}
 	}
 
@@ -129,6 +152,10 @@ public:
 		unitShader.setMatrix("worldMatrix", newContext.world);
 		for (auto&& selectUnit : selectedUnits) {
 			Util::drawLine(selectUnit->pos, selectUnit->pos + World::up * 10);
+			for (auto&& pos : selectUnit->dest.path) {
+				Util::drawLine(map.toWorld(pos), map.toWorld(pos) + World::up * 7,
+						Math::Point4f(1, 0, 0, 1));
+			}
 		}
 		Util::drawLine(selection, selection + World::up * 10);
 	}

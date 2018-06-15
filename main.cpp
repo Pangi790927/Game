@@ -118,88 +118,31 @@ int main (int argc, char const *argv[])
 				newWindow.requestClose();
 		}
 		newGame.getInput(newWindow, drawContext);
-
-		// must be called to reset mouse pos diff
 		newWindow.mouse.update();
-
-
-		drawContext.view = testCamera.getTransform();
-		shader.setMatrix("projectionMatrix", drawContext.proj);
-		shader.setMatrix("viewMatrix", drawContext.view);
 		
 		newWindow.focus();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		Point2f mousePos = Util::getMousePos(newWindow.mouse,
-				newWindow.width, newWindow.height);
-		auto ray = Util::getMouseRay(testCamera.getTransform(), mousePos, 55.0, 0.1,
-				float(newWindow.width) / newWindow.height);
-		auto intersect = Util::planeIntersect(ray, Util::Plane(
-			Point3f(), World::up));
-		if (intersect.first) {
-			shader.setMatrix("worldMatrix", identity<4, float>());
-			Util::drawLine(intersect.second + Point3f(0, 10, 0), intersect.second);
-		}
-
-
-		static Point3f start = 0;
-		static Point2f mouseStart = 0;
-		if (newWindow.mouse.getOnceRmb()) {
-			start = intersect.second;
-			mouseStart = mousePos;
-		}
-		// if (newWindow.mouse.getRmb()) {
-		// 	auto end = intersect.second;
-
-		// 	Util::drawLine(start, Point3f(start.x, 0, end.z));
-		// 	Util::drawLine(Point3f(start.x, 0, end.z), end);
-		// 	Util::drawLine(end, Point3f(end.x, 0, start.z));
-		// 	Util::drawLine(Point3f(end.x, 0, start.z), start);
-		// }
-
-		// for (int i = 0; i < 100; i++) {
-		// 	auto posTransform = translation<float>(
-		// 			(i / 10) * 100 * World::north + (i % 10) * 100 * World::west);
-			
-		// 	shader.setMatrix("worldMatrix", posTransform);
-		// 	if ((i / 10) % 2 && (i % 10) % 2)
-		// 		gTile1.draw(shader);
-		// 	else
-		// 		gTile2.draw(shader);
-		// 	// gPot.draw(shader);
-		// }
-		// glDisable(GL_BLEND);
+		
+		newGame.update();
+		
 		glLineWidth(1);
 		newGame.render(drawContext);
 		glLineWidth(4);
 		glEnable(GL_BLEND);
 
 		glDisable(GL_DEPTH_TEST);
-		// for (int i = 0; i < 100; i++) {
-		// 	auto posTransform = translation<float>(
-		// 			(i / 10) * 100 * World::north + (i % 10) * 100 * World::west);
-			
-		// 	shader.setMatrix("worldMatrix", posTransform * scale4<float>(3, 3, 3));
-		// 	gdMesh.draw(shader);	
-		// }
 
-		// menu stuff 
+		// still needs to go:
+		Point2f mousePos = Util::getMousePos(newWindow.mouse,
+				newWindow.width, newWindow.height);
+		static Point2f mouseStart = 0;
+		if (newWindow.mouse.getOnceRmb()) {
+			mouseStart = mousePos;
+		}
+
 		shader.setMatrix("projectionMatrix", identity<4, float>());
 		shader.setMatrix("viewMatrix", identity<4, float>());
-		
-		// for (int i = 0; i < 100; i++) {
-		// 	Mat4f view = testCamera.getTransform();
 
-		// 	Point2f result = Util::toScreen(
-		// 		(i / 10) * 100 * World::north + (i % 10) * 100 * World::west,
-		// 		drawContext.proj,
-		// 		view
-		// 	);
-
-		// 	shader.setMatrix("worldMatrix", translation<float>(Point3f(result)));
-		// 	gSphere.draw(shader);
-		// }
-		
 		if (newWindow.mouse.getRmb()) {
 			auto end = mousePos;
 

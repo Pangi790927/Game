@@ -23,7 +23,9 @@ public:
 
 	GameMap (int width, int height, float scale = 50)
 	: width(width), height(height), scale(scale),
-	tiles(height, std::vector<MapTile>(width)) {}
+	tiles(height, std::vector<MapTile>(width)) {
+		aquire(0, 0);
+	}
 
 	auto& operator () (int x, int y) {
 		return tiles[x][y];
@@ -53,12 +55,24 @@ public:
 		return x >= 0 && y >= 0 && x < tiles.size() && y < tiles[0].size();
 	}
 
+	bool inside (const Math::Point2i& pos) const {
+		return inside(pos.x, pos.y);
+	}
+
 	Math::Point2i getTilePos (const Math::Point2f& pos) const {
 		int x = pos.x / scale + 0.5;
 		int y = pos.y / scale + 0.5;
 		if (!inside(x, y))
 			return Math::Point2i(0, 0);
 		return Math::Point2i(x, y);
+	}
+
+	Math::Point2i getTilePos (const Math::Point3f& pos) const {
+		return getTilePos(Math::Point2f(pos.x, pos.z));
+	}
+
+	Math::Point3f toWorld (const Math::Point2i& pos) const {
+		return Math::Point3f(pos.x * scale, 0, pos.y * scale);
 	}
 
 	auto& operator () (const Math::Point2f& pos) {

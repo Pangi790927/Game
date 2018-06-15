@@ -1,13 +1,22 @@
 #ifndef UNIT_H
 #define UNIT_H
 
+#include <set>
+#include <map>
+#include <queue>
+#include <utility>
+
 #include "ShaderProgram.h"
 #include "Destination.h"
+#include "GameMap.h"
 
 class Unit {
 public:
+	const static int DEFAULT_MAX_ITER = 128;
+
 	int player = 0;
 	int type = 0;
+	int maxIter = DEFAULT_MAX_ITER;
 
 	Math::Point3f pos;
 	Math::Point3f dir;
@@ -16,6 +25,99 @@ public:
 
 	Unit (int player = 0, int type = 0)
 	: player(player), type(type) {}
+
+	virtual void move (GameMap& map) {
+		if (map.canAquire(dest.getNext()) && !dest.finishedPath()) {
+			map.release(map.getTilePos(pos));
+			pos = map.toWorld(dest.getNext());
+			map.aquire(dest.advance());
+		}
+		else {
+			if (dest.path.size() < dest.next)
+				dest.clearPath();
+			else if (dest.path.size() > 0)
+				dest.path.pop_back();
+			else
+				path(map);
+		}
+	}
+
+	void path (GameMap& map) {
+		dest.clearPath();
+		int iterLeft = maxIter;
+
+		using namespace Math;
+		float inf = map.height * map.width * 100;
+		
+		auto posCmp = [&] (const auto& left, const auto& right) -> bool {
+			return map.height * left.x + left.y <
+					map.height * right.x + right.y;
+		};
+
+		std::map<Point2i, Point2i, decltype(posCmp)> prev(posCmp);
+		std::map<Point2i, float, decltype(posCmp)> tDist(posCmp);
+		std::map<Point2i, float, decltype(posCmp)> hDist(posCmp);
+
+		auto getTDist = [&] (auto pos) {
+			if (tDist.find(pos) == tDist.end())
+				tDist[pos] = inf;
+			return tDist[pos];
+		};
+
+		auto getHDist = [&] (auto pos) {
+			if (hDist.find(pos) == hDist.end())
+				hDist[pos] = inf;
+			return hDist[pos];
+		};
+
+		auto cmp = [&] (auto left, auto right) -> bool {
+			return left.second > right.second;
+		};
+
+		std::priority_queue<std::pair<Point2i, float>,
+				std::vector<std::pair<Point2i, float>>, decltype(cmp)> que(cmp);
+		auto start = map.getTilePos(pos);
+		auto closest = start;
+
+		tDist[start] = 0;
+		hDist[start] = (Point2f(dest.finish) - Point2f(start)).norm2();
+		que.push(std::pair<Point2i, float>(start, tDist[start]));
+		while (!que.empty() && (closest - dest.finish).norm2() > 0.01 && iterLeft > 0) {
+			if (que.top().second > getHDist(que.top().first)) {
+				que.pop();
+			}
+			else {
+				iterLeft--;
+				auto node = que.top().first;
+				que.pop();
+
+				for (int i = 0; i < 9; i++) {
+					auto neigh = node + Point2i(i % 3 - 1, i / 3 - 1);
+					if (!map.inside(neigh) || i == 3 || !map.canAquire(neigh))
+						continue;
+					if (Point2f(closest - dest.finish).norm2() >
+							Point2f(neigh - dest.finish).norm2())
+						closest = neigh;
+					float score = getTDist(node) 
+							+ (Point2f(node) - Point2f(neigh)).norm2();
+					if (score < getTDist(neigh)) {
+						hDist[neigh] = getTDist(node) 
+								+ (Point2f(node) - Point2f(neigh)).norm2()
+								+ (Point2f(dest.finish) - Point2f(neigh)).norm2();
+						tDist[neigh] = score;
+						que.push(std::pair<Point2i, float>(neigh, hDist[neigh]));
+						prev[neigh] = node;
+					}
+				}
+			}
+		}
+
+		while (prev.find(closest) != prev.end()) {
+			dest.path.push_back(closest);
+			closest = prev[closest];
+		}
+		std::reverse(dest.path.begin(), dest.path.end()); 
+	}
 
 	virtual void render (DrawContext& drawContext,
 			ShaderProgram &defaultShader)
