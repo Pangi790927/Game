@@ -2,6 +2,7 @@
 #define UNIT_H
 
 #include "ShaderProgram.h"
+#include "Destination.h"
 
 class Unit {
 public:
@@ -11,9 +12,10 @@ public:
 	Math::Point3f pos;
 	Math::Point3f dir;
 
+	Destination dest;
+
 	Unit (int player = 0, int type = 0)
-	: player(player), type(type)
-	{}
+	: player(player), type(type) {}
 
 	virtual void render (DrawContext& drawContext,
 			ShaderProgram &defaultShader)

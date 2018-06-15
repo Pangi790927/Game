@@ -91,6 +91,17 @@ namespace Util
 		else
 			return Math::Point2f(-2, -2);
 	}
+
+	bool inSquare (Math::Point2f point, Math::Point2f a, Math::Point2f b) {
+		if (a.x > b.x)
+			std::swap(a.x, b.x);
+		if (a.y > b.y)
+			std::swap(a.y, b.y);
+		if (a.x <= point.x && point.x <= b.x)
+			if (a.y <= point.y && point.y <= b.y)
+				return true;
+		return false;
+	}
 }
 
 #endif

@@ -15,7 +15,7 @@ struct VertexColor		{ constexpr const static char name[] = "color"; };
 #include "DeprecatedVBOMeshDraw.h"
 #include "DynamicVBOMeshDraw.h"
 
-#include "Camera.h"
+#include "GameCamera.h"
 #include "GameUtil.h"
 #include "DrawContext.h"
 #include "Game.h"
@@ -38,7 +38,7 @@ int main (int argc, char const *argv[])
 {
 	using namespace Math;
 	/// Window
-	OpenglWindow newWindow(500, 800, "Shaders Example");
+	OpenglWindow newWindow(800, 800, "Shaders Example");
 
 	/// Shader
 	ShaderProgram shader = ShaderProgram({
@@ -47,11 +47,20 @@ int main (int argc, char const *argv[])
 	});
 
 	DrawContext drawContext;
+	drawContext.yFov = 55.0;
+	drawContext.zNear = 0.1;
+	drawContext.zFar = 10000;
+
 	newWindow.setResize([&] (int x, int y, int w, int h){
 		newWindow.focus();
 		glViewport(0, 0, w, h);
-		drawContext.proj = projection<float>(55.0,
-				newWindow.width / (float)newWindow.height, 0.1, 10000);
+		drawContext.aspect = newWindow.width / (float)newWindow.height;
+		drawContext.proj = projection<float>(
+			drawContext.yFov,
+			drawContext.aspect,
+			drawContext.zNear,
+			drawContext.zFar
+		);
 		shader.setMatrix("projectionMatrix", drawContext.proj);
 	});
 
@@ -73,14 +82,14 @@ int main (int argc, char const *argv[])
 	glEnable(GL_DEPTH_TEST);
 	glCullFace(GL_BACK);
 	glClearColor(1, 1, 1, 1);
-	// glEnable(GL_LINE_SMOOTH);
-	// glEnable(GL_POLYGON_SMOOTH);
-	// glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-	// glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+	glEnable(GL_LINE_SMOOTH);
+	glEnable(GL_POLYGON_SMOOTH);
+	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	Camera testCamera;
+	GameCamera testCamera;
 	testCamera.rotSpeed *= 3;
 
 	Mesh<NormalVertexType> pot;
@@ -100,7 +109,7 @@ int main (int argc, char const *argv[])
 	DeprecatedVBOMeshDraw gTile2(tile2);
 	DeprecatedVBOMeshDraw gSphere(sphere);
 
-	Game newGame(64);
+	Game newGame(64, 64);
 	newGame.initRender();
 
 	while (newWindow.active) {
@@ -108,35 +117,15 @@ int main (int argc, char const *argv[])
 			if (newWindow.keyboard.getKeyState(newWindow.keyboard.ESC))
 				newWindow.requestClose();
 		}
-		float speed = 1.0f;
-		if (newWindow.keyboard.getKeyState(newWindow.keyboard.L_SHIFT))
-			speed = 10;
-		if (newWindow.keyboard.getStateNoCase('W'))
-			testCamera.moveForward(speed);
-		if (newWindow.keyboard.getStateNoCase('S'))
-			testCamera.moveBackward(speed);
-		if (newWindow.keyboard.getStateNoCase('A'))
-			testCamera.moveLeft(speed);
-		if (newWindow.keyboard.getStateNoCase('D'))
-			testCamera.moveRight(speed);
-		if (newWindow.keyboard.getStateNoCase('Q'))
-			testCamera.moveDown(speed);
-		if (newWindow.keyboard.getStateNoCase('E'))
-			testCamera.moveUp(speed);
+		newGame.getInput(newWindow, drawContext);
 
-		if (newWindow.mouse.lmb) {
-			testCamera.rotate(
-				newWindow.mouse.x - newWindow.mouse.lastX,
-				newWindow.mouse.y - newWindow.mouse.lastY,
-				newWindow.width,
-				newWindow.height
-			);
-			newWindow.mouse.update();
-		}
+		// must be called to reset mouse pos diff
+		newWindow.mouse.update();
 
+
+		drawContext.view = testCamera.getTransform();
 		shader.setMatrix("projectionMatrix", drawContext.proj);
-		shader.setMatrix("viewMatrix",
-				drawContext.view = testCamera.getTransform());
+		shader.setMatrix("viewMatrix", drawContext.view);
 		
 		newWindow.focus();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -179,7 +168,7 @@ int main (int argc, char const *argv[])
 		// 		gTile2.draw(shader);
 		// 	// gPot.draw(shader);
 		// }
-		glDisable(GL_BLEND);
+		// glDisable(GL_BLEND);
 		glLineWidth(1);
 		newGame.render(drawContext);
 		glLineWidth(4);

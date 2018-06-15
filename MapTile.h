@@ -1,33 +1,24 @@
 #ifndef MAP_TILE_H
 #define MAP_TILE_H
 
-#include "SubTile.h"
+#include "Unit.h"
 
 class MapTile {
 public:
-	std::vector<std::vector<SubTile>> subtiles;
+	bool empty = true;
+	std::shared_ptr<Unit> unitPtr;
 
-	MapTile ()
-	: subtiles(3, std::vector<SubTile>(3)) {}
+	bool aquire() {
+		empty = false;
+	}
 
-	// void render (int i, int j, DrawContext& drawContext,
-	// 		ShaderProgram &shader)
-	// {
-	// 	for (int i = 0; i < 3; i++)
-	// 		for (int j = 0; j < 3; j++) {
-	// 			DrawContext newContext = DrawContext(
-	// 				drawContext.proj,
-	// 				drawContext.view,
-	// 				Math::translation<float>(
-	// 						i,
-	// 						0,
-	// 						j
-	// 					) 
-	// 					* drawContext.world
-	// 			);
-	// 			subtiles[i][j].render(newContext, shader);
-	// 		}
-	// }
+	bool canAquire() const {
+		return empty;
+	}
+
+	void release() {
+		empty = true;
+	}
 };
 
 #endif

@@ -3,7 +3,6 @@
 
 #include "MapTile.h"
 
-
 class GameMap {
 public:
 	using MapVertexType = Vertex<
@@ -13,32 +12,61 @@ public:
 		Math::Point2f,	VertexTexCoord
 	>;
 
-	int size;
+	int width;
+	int height;
+	float scale;
 	std::vector<std::vector<MapTile>> tiles;
 
 	Mesh<MapVertexType> mMap;
 	DeprecatedVBOMeshDraw gMap;
 	ShaderProgram shader;
 
-	float scale;
+	GameMap (int width, int height, float scale = 50)
+	: width(width), height(height), scale(scale),
+	tiles(height, std::vector<MapTile>(width)) {}
 
-	GameMap (int size, float scale = 50)
-	: tiles(size, std::vector<MapTile>(size)), size(size), scale(scale) {}
-
-	SubTile& operator () (int x, int y) {
-		return tiles[x / 3][y / 3].subtiles[x % 3][y % 3];
+	auto& operator () (int x, int y) {
+		return tiles[x][y];
 	}
 
-	const SubTile& operator () (int x, int y) const {
-		return tiles[x / 3][y / 3].subtiles[x % 3][y % 3];
+	const auto& operator () (int x, int y) const {
+		return tiles[x][y];
 	}
 
-	std::vector<MapTile>& operator [] (int i) {
+	auto& operator () (const Math::Point2i& pos) {
+		return tiles[pos.x][pos.y];
+	}
+
+	const auto& operator () (const Math::Point2i& pos) const {
+		return tiles[pos.x][pos.y];
+	}
+
+	auto& operator [] (int i) {
 		return tiles[i];
 	}
 
-	const std::vector<MapTile>& operator [] (int i) const {
+	const auto& operator [] (int i) const {
 		return tiles[i];
+	}
+
+	bool inside (int x, int y) const {
+		return x >= 0 && y >= 0 && x < tiles.size() && y < tiles[0].size();
+	}
+
+	Math::Point2i getTilePos (const Math::Point2f& pos) const {
+		int x = pos.x / scale + 0.5;
+		int y = pos.y / scale + 0.5;
+		if (!inside(x, y))
+			return Math::Point2i(0, 0);
+		return Math::Point2i(x, y);
+	}
+
+	auto& operator () (const Math::Point2f& pos) {
+		return (*this)(getTilePos(pos));
+	}
+
+	const auto& operator () (const Math::Point2f& pos) const {
+		return (*this)(getTilePos(pos));
 	}
 
 	void initRender() {
@@ -47,47 +75,49 @@ public:
 			{GL_VERTEX_SHADER, "Shaders/mapShader.vert"},
 			{GL_FRAGMENT_SHADER, "Shaders/mapShader.frag"}
 		});
-		for (int i = 0; i < size; i++)
-			for (int j = 0; j < size; j++)
+		for (int i = 0; i < height; i++)
+			for (int j = 0; j < width; j++)
 						Util::addSquareW(mMap, 1.5,
 								Vec4f((i + j) % 2, 0, 1, 1),
-								translation<float>(i * 3 + 1, 0, j * 3 + 1) *
+								translation<float>(i, 0, j) *
 								rot4<float>(-90, World::west) *
 								scale);
 
-		for (int i = 0; i < size; i++)
-			for (int j = 0; j < size; j++)
-				for (int k = 0; k < 3; k++)
-					for (int o = 0; o < 3; o++)
-						Util::addSquareW(mMap, 0.48,
-								Vec4f((i + j) % 2, (k + o) % 2, 0, 1),
-								translation<float>(i * 3 + k, 0, j * 3 + o) *
-								rot4<float>(-90, World::west) *
-								scale);
 		gMap = DeprecatedVBOMeshDraw(mMap);
 	}
 
 	void render (DrawContext& drawContext) {
-		using namespace Math;
 		shader.useProgram();
 		shader.setMatrix("projectionMatrix", drawContext.proj);
 		shader.setMatrix("viewMatrix", drawContext.view);
 		shader.setMatrix("worldMatrix", drawContext.world);
 		gMap.draw(shader);
-		// for (int i = 0; i < tiles.size(); i++)
-		// 	for (int j = 0; j < tiles[i].size(); j++) {
-		// 		DrawContext newContext = DrawContext(
-		// 			drawContext.proj,
-		// 			drawContext.view,
-		// 			Math::translation<float>(
-		// 					i * 3 * scale,
-		// 					0,
-		// 					j * 3 * scale
-		// 				) 
-		// 				* drawContext.world
-		// 		);
-		// 		tiles[i][j].render(i, j, newContext, shader);
-		// 	}
+	}
+
+	bool aquire (int x, int y) {
+		return inside(x, y) && tiles[x][y].aquire();
+	}
+
+	bool canAquire (int x, int y) const {
+		return inside(x, y) && tiles[x][y].canAquire();
+	}
+
+	void release(int x, int y) {
+		if (inside(x, y)) {
+			tiles[x][y].release();
+		}
+	}
+
+	bool aquire (const Math::Point2i& pos) {
+		return aquire(pos.x, pos.y);
+	}
+
+	bool canAquire (const Math::Point2i& pos) const {
+		return canAquire(pos.x, pos.y);
+	}
+
+	void release (const Math::Point2i& pos) {
+		release(pos.x, pos.y);
 	}
 };
 
