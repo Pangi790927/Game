@@ -3,9 +3,12 @@
 
 class Destination {
 public:
-	std::vector<Math::Point2i> path;
-	Math::Point2i finish = Math::Point2i();
+	static const int MAX_TRIES = 20;
 	int next = 0;
+	std::vector<Math::Point2i> path;
+	
+	Math::Point2i finish = Math::Point2i();
+	int tries = MAX_TRIES;
 
 	void clearPath() {
 		next = 0;
@@ -15,6 +18,7 @@ public:
 	void setFinish (Math::Point2i dest) {
 		clearPath();
 		finish = dest;
+		tries = MAX_TRIES;
 	}
 
 	Math::Point2i getNext() {

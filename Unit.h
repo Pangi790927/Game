@@ -37,8 +37,11 @@ public:
 				dest.clearPath();
 			else if (dest.path.size() > 0)
 				dest.path.pop_back();
-			else
-				path(map);
+			else if (dest.tries > 0) {
+				dest.tries--;
+				path(map);	// maybe add a thread pool here?
+							// and join threads in another function?
+			}
 		}
 	}
 
@@ -49,14 +52,22 @@ public:
 		using namespace Math;
 		float inf = map.height * map.width * 100;
 		
-		auto posCmp = [&] (const auto& left, const auto& right) -> bool {
-			return map.height * left.x + left.y <
-					map.height * right.x + right.y;
+		auto posHash = [&] (const auto& pos) -> int {
+			return map.height * pos.x + pos.y;
 		};
 
-		std::map<Point2i, Point2i, decltype(posCmp)> prev(posCmp);
-		std::map<Point2i, float, decltype(posCmp)> tDist(posCmp);
-		std::map<Point2i, float, decltype(posCmp)> hDist(posCmp);
+		auto posEq = [&] (const auto& left, const auto& right) {
+			return posHash(left) == posHash(right);
+		};
+
+		std::unordered_map<Point2i, Point2i, decltype(posHash), decltype(posEq)>
+		prev(size_t(180), posHash, posEq);
+		
+		std::unordered_map<Point2i, float, decltype(posHash), decltype(posEq)>
+		tDist(size_t(180), posHash, posEq);
+		
+		std::unordered_map<Point2i, float, decltype(posHash), decltype(posEq)>
+		hDist(size_t(180), posHash, posEq);
 
 		auto getTDist = [&] (auto pos) {
 			if (tDist.find(pos) == tDist.end())
@@ -74,6 +85,10 @@ public:
 			return left.second > right.second;
 		};
 
+		auto squareNorm = [] (auto point) -> float {
+			return (point.tr() * point).x;
+		};
+
 		std::priority_queue<std::pair<Point2i, float>,
 				std::vector<std::pair<Point2i, float>>, decltype(cmp)> que(cmp);
 		auto start = map.getTilePos(pos);
@@ -82,7 +97,7 @@ public:
 		tDist[start] = 0;
 		hDist[start] = (Point2f(dest.finish) - Point2f(start)).norm2();
 		que.push(std::pair<Point2i, float>(start, tDist[start]));
-		while (!que.empty() && (closest - dest.finish).norm2() > 0.01 && iterLeft > 0) {
+		while (!que.empty() && squareNorm(closest - dest.finish) > 0.001 && iterLeft > 0) {
 			if (que.top().second > getHDist(que.top().first)) {
 				que.pop();
 			}
@@ -95,13 +110,13 @@ public:
 					auto neigh = node + Point2i(i % 3 - 1, i / 3 - 1);
 					if (!map.inside(neigh) || i == 3 || !map.canAquire(neigh))
 						continue;
-					if (Point2f(closest - dest.finish).norm2() >
-							Point2f(neigh - dest.finish).norm2())
+					if (squareNorm(Point2f(closest - dest.finish)) >
+							squareNorm(Point2f(neigh - dest.finish)))
 						closest = neigh;
-					float score = getTDist(node) 
+					float score = getTDist(node)
 							+ (Point2f(node) - Point2f(neigh)).norm2();
 					if (score < getTDist(neigh)) {
-						hDist[neigh] = getTDist(node) 
+						hDist[neigh] = getTDist(node)
 								+ (Point2f(node) - Point2f(neigh)).norm2()
 								+ (Point2f(dest.finish) - Point2f(neigh)).norm2();
 						tDist[neigh] = score;
@@ -116,7 +131,7 @@ public:
 			dest.path.push_back(closest);
 			closest = prev[closest];
 		}
-		std::reverse(dest.path.begin(), dest.path.end()); 
+		std::reverse(dest.path.begin(), dest.path.end());
 	}
 
 	virtual void render (DrawContext& drawContext,

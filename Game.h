@@ -152,10 +152,10 @@ public:
 		unitShader.setMatrix("worldMatrix", newContext.world);
 		for (auto&& selectUnit : selectedUnits) {
 			Util::drawLine(selectUnit->pos, selectUnit->pos + World::up * 10);
-			for (auto&& pos : selectUnit->dest.path) {
-				Util::drawLine(map.toWorld(pos), map.toWorld(pos) + World::up * 7,
-						Math::Point4f(1, 0, 0, 1));
-			}
+			// for (auto&& pos : selectUnit->dest.path) {
+			// 	Util::drawLine(map.toWorld(pos), map.toWorld(pos) + World::up * 7,
+			// 			Math::Point4f(1, 0, 0, 1));
+			// }
 		}
 		Util::drawLine(selection, selection + World::up * 10);
 	}
