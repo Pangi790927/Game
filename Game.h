@@ -139,6 +139,10 @@ public:
 		});
 	}
 
+	void input (Keyboard<>& keyboard, Mouse& mouse) {
+
+	} 
+
 	void render (DrawContext& drawContext) {
 		DrawContext newContext = drawContext;
 		newContext.view = camera.getTransform();

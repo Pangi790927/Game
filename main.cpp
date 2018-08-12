@@ -46,6 +46,7 @@ int main (int argc, char const *argv[])
 		{GL_FRAGMENT_SHADER, "Shaders/textureShader.frag"}
 	});
 
+	/// Draw Context
 	DrawContext drawContext;
 	drawContext.yFov = 55.0;
 	drawContext.zNear = 0.1;
@@ -64,18 +65,7 @@ int main (int argc, char const *argv[])
 		shader.setMatrix("projectionMatrix", drawContext.proj);
 	});
 
-	shader.setMatrix("viewMatrix", identity<4, float>());
-	shader.setMatrix("worldMatrix", translation<float>(0, -10, -50));
-
-	/// Mesh
-	// Mesh mesh = OBJLoader<VertexType>().loadMesh("Obj/TankNoTex/", "T-90.obj");
-	// Mesh mesh = OBJLoader<VertexType>().loadMesh("Obj/Tree/", "Lowpoly_tree_sample.obj");
-	// Mesh mesh = OBJLoader<VertexType>().loadMesh("Obj/Box/", "box_obj.obj");
-	// Mesh mesh = OBJLoader<VertexType>().loadMesh("Obj/Town/OBJ/", "City.obj");
-	
-	// DeprecatedVBOMeshDraw gMesh(mesh);
-	// DynamicVBOMeshDraw gdMesh(mesh);
-
+	/// RENDER OPTIONS
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_CULL_FACE);
 	glLineWidth(6);
@@ -113,6 +103,7 @@ int main (int argc, char const *argv[])
 	newGame.initRender();
 
 	while (newWindow.active) {
+		/// EXIT KEY:
 		if (newWindow.handleInput()) {
 			if (newWindow.keyboard.getKeyState(newWindow.keyboard.ESC))
 				newWindow.requestClose();
@@ -147,6 +138,9 @@ int main (int argc, char const *argv[])
 			auto end = mousePos;
 
 			auto red = Point4f(1, 0, 0, 1);
+
+			shader.setMatrix("projectionMatrix", identity<4, float>());
+			shader.setMatrix("viewMatrix", identity<4, float>());
 			shader.setMatrix("worldMatrix", identity<4, float>());
 			
 			Util::drawLine(mouseStart, Point3f(mouseStart.x, mousePos.y, 0), red);
