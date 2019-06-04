@@ -91,11 +91,11 @@ public:
 		});
 		for (int i = 0; i < height; i++)
 			for (int j = 0; j < width; j++)
-						Util::addSquareW(mMap, 1.5,
-								Vec4f((i + j) % 2, 0, 1, 1),
-								translation<float>(i, 0, j) *
-								rot4<float>(-90, World::west) *
-								scale);
+				Util::addSquareW(mMap, 1.5,
+						Vec4f((i + j) % 2, 0, 1, 1),
+						translation<float>(i, 0, j) *
+						rot4<float>(-90, World::west) *
+						scale);
 
 		gMap = DeprecatedVBOMeshDraw(mMap);
 	}
