@@ -19,10 +19,17 @@ public:
 	: Unit(player, type)
 	{}
 
+	Mesh<TankVertexType> createModel() {
+		Mesh<TankVertexType> tank;
+		Util::addCube(tank, 3, Math::Vec4f(0.44, 0.9, 0.1, 1));
+		return tank;
+	}
+
 	DeprecatedVBOMeshDraw& getModel() {
-		static Mesh<TankVertexType> mTank = 
-				OBJLoader<TankVertexType>().loadMesh(
-					"Obj/TankNoTex/", "T-90.obj");
+		// static Mesh<TankVertexType> mTank = 
+		// 		OBJLoader<TankVertexType>().loadMesh(
+		// 			"Obj/TankNoTex/", "T-90.obj");
+		static Mesh<TankVertexType> mTank = createModel();
 		static DeprecatedVBOMeshDraw gTank;
 
 		if (gTank.isFree) {

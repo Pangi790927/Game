@@ -34,11 +34,17 @@ using NormalVertexType = Vertex<
 	Math::Point2f,	VertexTexCoord
 >;
 
+void debugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                  const GLchar *message, const void *userParam)
+{
+	printf("%s\n", message);
+}
+
 int main (int argc, char const *argv[])
 {
 	using namespace Math;
 	/// Window
-	OpenglWindow newWindow(800, 800, "Shaders Example");
+	OpenglWindow newWindow(800, 800, "QRev");
 
 	/// Shader
 	ShaderProgram shader = ShaderProgram({
@@ -62,8 +68,25 @@ int main (int argc, char const *argv[])
 			drawContext.zNear,
 			drawContext.zFar
 		);
-		shader.setMatrix("projectionMatrix", drawContext.proj);
+		// shader.setMatrix("projectionMatrix", drawContext.proj);
 	});
+
+	GLint flags;
+	glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+
+	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback(debugMessage, NULL);
+		
+		// enable all
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0,
+				NULL, GL_TRUE);
+		printf("Debug context !!!\n");
+	}
+	else
+		printf("Not debug context !!!\n");
+
 
 	/// RENDER OPTIONS
 	glEnable(GL_TEXTURE_2D);
@@ -71,39 +94,18 @@ int main (int argc, char const *argv[])
 	glLineWidth(6);
 	glEnable(GL_DEPTH_TEST);
 	glCullFace(GL_BACK);
-	glClearColor(1, 1, 1, 1);
 	glEnable(GL_LINE_SMOOTH);
 	glEnable(GL_POLYGON_SMOOTH);
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-	glEnable(GL_BLEND);
+	glDisable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GameCamera testCamera;
-	testCamera.rotSpeed *= 3;
-
-	Mesh<NormalVertexType> pot;
-	Mesh<NormalVertexType> tile1;
-	Mesh<NormalVertexType> tile2;
-	Mesh<NormalVertexType> sphere;
-
-	Util::addCube(pot, 3, Vec4f(0.44, 0.9, 0.1, 1));
-	Util::addSquare(tile1, 45, Vec4f(0.34, 0.56, 0.1, 1),
-			rot4<float>(-90, World::west));
-	Util::addSquare(tile2, 45, Vec4f(0.74, 0.23, 0.56, 1),
-			rot4<float>(-90, World::west));
-	Util::addSphere(sphere, 0.01, 30, Vec4f(0.12, 0.23, 0.42, 1));
-
-	DeprecatedVBOMeshDraw gPot(pot);
-	DeprecatedVBOMeshDraw gTile1(tile1);
-	DeprecatedVBOMeshDraw gTile2(tile2);
-	DeprecatedVBOMeshDraw gSphere(sphere);
-
-	Game newGame(64, 64);
+	Game newGame(128, 128);
 	newGame.initRender();
 
 	while (newWindow.active) {
-		/// EXIT KEY:
+		// EXIT KEY:
 		if (newWindow.handleInput()) {
 			if (newWindow.keyboard.getKeyState(newWindow.keyboard.ESC))
 				newWindow.requestClose();
@@ -112,43 +114,34 @@ int main (int argc, char const *argv[])
 		newWindow.mouse.update();
 		
 		newWindow.focus();
+		glClearColor(1, 1, 1, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		newGame.update();
 		
 		glLineWidth(1);
+		glEnable(GL_DEPTH_TEST);
+		// glDisable(GL_BLEND);
 		newGame.render(drawContext);
+		
 		glLineWidth(4);
-		glEnable(GL_BLEND);
-
+		// glEnable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
-
-		// still needs to go:
-		Point2f mousePos = Util::getMousePos(newWindow.mouse,
-				newWindow.width, newWindow.height);
-		static Point2f mouseStart = 0;
-		if (newWindow.mouse.getOnceRmb()) {
-			mouseStart = mousePos;
-		}
-
 		shader.setMatrix("projectionMatrix", identity<4, float>());
 		shader.setMatrix("viewMatrix", identity<4, float>());
+		shader.setMatrix("worldMatrix", identity<4, float>());
+		newGame.render2D(drawContext);
 
-		if (newWindow.mouse.getRmb()) {
-			auto end = mousePos;
+		static int fps = 0;
+		static int last_time = 0;
+		fps += 1;
 
-			auto red = Point4f(1, 0, 0, 1);
-
-			shader.setMatrix("projectionMatrix", identity<4, float>());
-			shader.setMatrix("viewMatrix", identity<4, float>());
-			shader.setMatrix("worldMatrix", identity<4, float>());
-			
-			Util::drawLine(mouseStart, Point3f(mouseStart.x, mousePos.y, 0), red);
-			Util::drawLine(Point3f(mouseStart.x, mousePos.y, 0), mousePos, red);
-			Util::drawLine(mousePos, Point3f(mousePos.x, mouseStart.y, 0), red);
-			Util::drawLine(Point3f(mousePos.x, mouseStart.y, 0), mouseStart, red);
+		if (last_time != time(0)) {
+			last_time = time(0);
+			printf("time %d fps: %d\n", last_time, fps);
+			fps = 0;
 		}
-		glEnable(GL_DEPTH_TEST);
+
 		newWindow.swapBuffers();
 	}
 	return 0;

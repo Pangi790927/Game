@@ -18,7 +18,12 @@ public:
 	std::vector<std::shared_ptr<Unit>> selectedUnits;
 	ShaderProgram unitShader;
 	GameCamera camera;
+
 	Math::Point3f selection;
+	Math::Point2f mouse_pos_screen;
+	Math::Point3f mouse_pos_map;
+	Math::Point2f lastPos;
+	bool wasRmb = false;
 	bool wallAdd = false;
 
 	Game (int mapWidth, int mapHeight) : map(mapWidth, mapHeight) {
@@ -29,6 +34,7 @@ public:
 		spawnUnit(1, 1, 7, 3);
 		camera -= World::up * 100;
 		camera.horizRot += 120;
+		camera.speed = Camera::DEFAULT_MOV_SPEED * 5;
 	}
 
 	void spawnUnit (int player, int type, int i, int j) {
@@ -51,14 +57,44 @@ public:
 		}
 	}
 
+	auto mouseToMap(Math::Point2f pos, DrawContext& drawContext) {
+		using namespace Math;
+		auto ray = Util::getMouseRay(
+			drawContext.view,
+			pos,
+			drawContext.yFov,
+			drawContext.zNear,
+			drawContext.aspect
+		);
+		auto intersect = Util::planeIntersect(
+			ray,
+			Util::Plane(
+				Point3f(),
+				World::up
+			)
+		);
+		Point3f res;
+		if (intersect.first) {
+			res = intersect.second;
+			return std::tuple{true, res};
+		}
+		else {
+			return std::tuple{false, res};
+		}
+	}
+
 	void getInput (OpenglWindow& window, DrawContext& drawContext) {
 		DrawContext newContext = drawContext;
 		newContext.view = camera.getTransform();
 
 		camera.getInput(window);
 		
-		static Math::Point2f lastPos;
-		static bool wasRmb = false;
+		mouse_pos_screen = Util::getMousePos(window.mouse,
+				window.width, window.height);
+		auto [intersect, map_pos] = mouseToMap(mouse_pos_screen, newContext);
+		if (intersect)
+			mouse_pos_map = map_pos;
+		
 		if (window.keyboard.getKeyState('t'))
 			wallAdd = true;
 		else
@@ -100,22 +136,9 @@ public:
 			DrawContext& drawContext)
 	{
 		using namespace Math;
-		auto ray = Util::getMouseRay(
-			drawContext.view,
-			pos,
-			drawContext.yFov,
-			drawContext.zNear,
-			drawContext.aspect
-		);
-		auto intersect = Util::planeIntersect(
-			ray,
-			Util::Plane(
-				Point3f(),
-				World::up
-			)
-		);
-		if (intersect.first) {
-			selection = intersect.second;
+		auto [was_intersect, map_pos] = mouseToMap(pos, drawContext);
+		if (was_intersect) {
+			selection = map_pos;
 			auto tilePos = map.getTilePos(Point2f(selection.x, selection.z));
 			if (wallAdd) {
 				spawnUnit(1, 1,
@@ -162,6 +185,22 @@ public:
 			// }
 		}
 		Util::drawLine(selection, selection + World::up * 10);
+		Util::drawLine(mouse_pos_map, mouse_pos_map + World::up * 15);
+	}
+
+	void render2D(DrawContext& drawContext) {
+		using namespace Math;
+		if (wasRmb) {
+			auto red = Point4f(1, 0, 0, 1);
+
+			Point3f mouseStart = lastPos;
+			Point3f mousePos = mouse_pos_screen;;
+
+			Util::drawLine(mouseStart, Point3f(mouseStart.x, mousePos.y, 0), red);
+			Util::drawLine(Point3f(mouseStart.x, mousePos.y, 0), mousePos, red);
+			Util::drawLine(mousePos, Point3f(mousePos.x, mouseStart.y, 0), red);
+			Util::drawLine(Point3f(mousePos.x, mouseStart.y, 0), mouseStart, red);
+		}
 	}
 };
 

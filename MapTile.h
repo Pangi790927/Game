@@ -7,6 +7,7 @@ public:
 
 	bool aquire() {
 		empty = false;
+		return empty;
 	}
 
 	bool canAquire() const {
